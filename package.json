@@ -1,0 +1,24 @@
+{
+  "name": "notes-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Background worker that polls Postgres item count",
+  "main": "worker.js",
+  "scripts": {
+    "start": "node worker.js",
+    "lint": "eslint .",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.11.0",
+    "globals": "^17.12.0"
+  }
+}

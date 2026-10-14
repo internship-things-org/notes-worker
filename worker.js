@@ -1,0 +1,58 @@
+require('dotenv').config();
+const { Pool } = require('pg');
+
+// Same DB_* vars as the API. On a Compose network, DB_HOST should be the
+// Postgres service name (e.g. "db"). Put the worker on a network that can
+// reach the DB; you typically do NOT publish a host port for the worker.
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+});
+
+const INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS || 15000);
+
+async function waitForDb(db = pool, retries = 10, delayMs = 2000) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await db.query('SELECT 1');
+      console.log('Worker connected to Postgres');
+      return;
+    } catch (err) {
+      console.warn(
+        `Worker: Postgres not ready (attempt ${attempt}/${retries}): ${err.message}`
+      );
+      if (attempt === retries) throw err;
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+}
+
+async function tick(db = pool) {
+  try {
+    const { rows } = await db.query('SELECT COUNT(*)::int AS count FROM items');
+    const count = rows[0].count;
+    console.log(`[${new Date().toISOString()}] items in database: ${count}`);
+    return count;
+  } catch (err) {
+    console.error('Worker poll failed:', err.message);
+    return null;
+  }
+}
+
+async function main() {
+  await waitForDb();
+  await tick();
+  setInterval(tick, INTERVAL_MS);
+}
+
+module.exports = { waitForDb, tick, main, pool, INTERVAL_MS };
+
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
