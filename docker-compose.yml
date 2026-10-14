@@ -1,0 +1,28 @@
+services:
+  worker:
+    image: ghcr.io/daulyoi/worker:latest
+    # NOTE: db lives in notes-infra/docker-compose.yml on the shared
+    # external network "notes-network". Cross-file depends_on is not
+    # supported (backend is not in this file), so start infra first and
+    # rely on worker.js waitForDb() retries. Same for backend ordering:
+    # start notes-be before/with the worker if needed.
+    networks:
+      - notes-network
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - POLL_INTERVAL_MS=${POLL_INTERVAL_MS}
+    # healthcheck:
+    #   test: ["CMD-SHELL", "node -e \"const {Pool}=require('pg');(async()=>{const p=new Pool({host:process.env.DB_HOST,port:process.env.DB_PORT,user:process.env.DB_USER,password:process.env.DB_PASSWORD,database:process.env.DB_NAME,connectionTimeoutMillis:2000});try{await p.query('SELECT 1');await p.end();process.exit(0)}catch(e){process.exit(1)}})()\""]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+    #   start_period: 20s
+
+networks:
+  notes-network:
+    name: notes-network
+    external: true
