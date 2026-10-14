@@ -1,5 +1,8 @@
 services:
   worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: ghcr.io/daulyoi/worker:latest
     # NOTE: db lives in notes-infra/docker-compose.yml on the shared
     # external network "notes-network". Cross-file depends_on is not
